@@ -1,0 +1,177 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  passwordHash  String
+  role          String    @default("PATIENT") // PATIENT, DOCTOR, FAMILY, ADMIN
+  phone         String?
+  largeTextPref Boolean   @default(false)
+  darkModePref  Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  patientProfile       PatientProfile?
+  prescribedMeds       Medication[]         @relation("DoctorPrescriptions")
+  patientMeds          Medication[]         @relation("PatientMedications")
+  logsRecorded         IntakeLog[]          @relation("UserIntakeLogs")
+  familyLinksAsPatient FamilyConnection[]   @relation("PatientFamily")
+  familyLinksAsFamily  FamilyConnection[]   @relation("FamilyUser")
+  doctorLinksAsDoctor  DoctorPatientLink[]  @relation("DoctorLinks")
+  doctorLinksAsPatient DoctorPatientLink[]  @relation("PatientDoctorLinks")
+  sentMessages         Message[]            @relation("SentMessages")
+  receivedMessages     Message[]            @relation("ReceivedMessages")
+  auditLogs            AuditLog[]           @relation("ActorAuditLogs")
+}
+
+model PatientProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dob                DateTime?
+  emergencyContacts  String?  // JSON stringified contacts: name, phone, relationship
+  bloodGroup         String?
+  allergies          String?  // JSON or comma separated
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Medication {
+  id              String      @id @default(cuid())
+  patientId       String
+  patient         User        @relation("PatientMedications", fields: [patientId], references: [id], onDelete: Cascade)
+  prescribedById  String?
+  prescribedBy    User?       @relation("DoctorPrescriptions", fields: [prescribedById], references: [id])
+  name            String
+  dosage          String      // e.g., "10mg", "500mg"
+  frequency       String      // e.g., "ONCE_DAILY", "TWICE_DAILY", "AS_NEEDED"
+  timesOfDay      String      // JSON array of strings, e.g. '["08:00", "20:00"]'
+  startDate       DateTime    @default(now())
+  endDate         DateTime?
+  status          String      @default("ACTIVE") // ACTIVE, DISCONTINUED, PAUSED
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  intakeLogs      IntakeLog[]
+  reminders       Reminder[]
+
+  @@index([patientId])
+  @@index([status])
+}
+
+model IntakeLog {
+  id           String     @id @default(cuid())
+  medicationId String
+  medication   Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  scheduledAt  DateTime
+  takenAt      DateTime?
+  status       String     @default("PENDING") // PENDING, TAKEN, MISSED, SKIPPED
+  loggedById   String?
+  loggedBy     User?      @relation("UserIntakeLogs", fields: [loggedById], references: [id])
+  source       String     @default("APP")     // APP, OFFLINE_SYNC, CAREGIVER
+  notes        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([medicationId])
+  @@index([scheduledAt])
+  @@index([status])
+}
+
+model Reminder {
+  id            String     @id @default(cuid())
+  medicationId  String
+  medication    Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  type          String     // PRE, PRIMARY, ESCALATION
+  offsetMinutes Int        @default(0) // -15 for pre, 0 for primary, 60 for escalation
+  channel       String     @default("INAPP") // INAPP, EMAIL, SMS
+  sentAt        DateTime?
+  status        String     @default("PENDING") // PENDING, SENT, FAILED
+  recipientRole String     @default("PATIENT") // PATIENT, FAMILY, DOCTOR
+  message       String?
+  createdAt     DateTime   @default(now())
+
+  @@index([medicationId])
+  @@index([status])
+}
+
+model FamilyConnection {
+  id                 String   @id @default(cuid())
+  patientId          String
+  patient            User     @relation("PatientFamily", fields: [patientId], references: [id], onDelete: Cascade)
+  familyUserId       String?
+  familyUser         User?    @relation("FamilyUser", fields: [familyUserId], references: [id])
+  invitedEmail       String
+  permissionLevel    String   @default("VIEW_ONLY") // VIEW_ONLY, ALERTS, FULL_MANAGEMENT
+  status             String   @default("PENDING")   // PENDING, ACCEPTED, REJECTED
+  isEmergencyContact Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([familyUserId])
+}
+
+model DoctorPatientLink {
+  id         String   @id @default(cuid())
+  doctorId   String
+  doctor     User     @relation("DoctorLinks", fields: [doctorId], references: [id], onDelete: Cascade)
+  patientId  String
+  patient    User     @relation("PatientDoctorLinks", fields: [patientId], references: [id], onDelete: Cascade)
+  status     String   @default("ACTIVE") // PENDING, ACTIVE, REVOKED
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([doctorId])
+  @@index([patientId])
+}
+
+model Message {
+  id          String    @id @default(cuid())
+  senderId    String
+  sender      User      @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  recipientId String
+  recipient   User      @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
+  patientId   String?   // context patient
+  body        String
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([patientId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation("ActorAuditLogs", fields: [actorId], references: [id])
+  action     String   // e.g. "VIEW_MEDS", "PRESCRIBE_MED", "UPDATE_INTAKE", "CONSENT_APPROVED"
+  targetType String   // "PATIENT", "MEDICATION", "INTAKE_LOG", "FAMILY_LINK"
+  targetId   String
+  metadata   String?  // JSON string
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([targetType, targetId])
+}
+
+model DrugInteraction {
+  id          String   @id @default(cuid())
+  drugA       String
+  drugB       String
+  severity    String   // MILD, MODERATE, SEVERE
+  description String
+  createdAt   DateTime @default(now())
+
+  @@unique([drugA, drugB])
+}

@@ -1,0 +1,21 @@
+{
+  "name": "MedTrack — Medicine Tracking CRM",
+  "short_name": "MedTrack",
+  "description": "Healthcare-adjacent Medicine Tracking CRM for Patients, Doctors, and Family Caregivers",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#EEF2F6",
+  "theme_color": "#0EA5E9",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+# MedTrack — Medicine Tracking CRM
+
+> Developed by Immortal Minds Technology in 2026.
+
+## Overview
+MedTrack is a production-grade, healthcare-adjacent **Medicine Tracking CRM** built with Next.js 14+ (App Router), TypeScript, Prisma ORM, and NextAuth.js. It features a tactile Claymorphism UI theme with responsive Bento Grid layouts, WCAG AA accessibility, real-time telehealth video calling, multi-tier adherence escalation, and clinical drug interaction cross-checking.
+
+## Developer Information
+- **Developer:** Immortal Minds Technology
+- **Year:** 2026
+- **Project Name:** MedTrack CRM (Hospital CRM Portal)
+
+## Key Features & Architecture
+- **Multi-Role Support:** Dedicated dashboards for Patients, Doctors, and Family Caregivers.
+- **Multi-Tier Escalation Engine:** 
+  - Tier 1: Pre-reminders (-15 mins) & primary alerts for patients.
+  - Tier 2: Overdue alert to caregivers after grace window (>45 mins).
+  - Tier 3: Chronic non-adherence alerts to physicians (3+ missed doses over 7 days).
+- **In-App Telehealth Calling (`/call`):** Direct web-based audio/video consultation with clinical note logging.
+- **Drug Interaction Safeguards:** Real-time cross-checking against known contraindications (e.g., Lisinopril + Spironolactone).
+- **Offline & PWA Support:** Progressive Web App with service worker background sync.
+- **HIPAA-Aware Audit Logging:** Strict role-based access control (RBAC) and audit trails.
+
+## User Roles & Demo Credentials
+All demo accounts use password: `MedTrack123!`
+
+| Role | Email | Capabilities |
+|------|-------|--------------|
+| Patient | patient@medtrack.com | Intake schedule, dose logging, Care Circle, adherence reports |
+| Doctor | doctor@medtrack.com | Linked roster, prescribing, clinical alerts, telehealth calls |
+| Family | family@medtrack.com | Caregiver view, proxy logging, emergency contact controls |
+| Admin | admin@medtrack.com | Audit logs, system overview |
+
+## Deployment & Setup
+- **Framework:** Next.js 14 (App Router)
+- **Database:** Prisma ORM (SQLite for local, PostgreSQL for production)
+- **Auth:** NextAuth.js JWT Sessions
